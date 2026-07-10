@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal de Sistemas · Conexão Rastreadores</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='42' fill='%230A0E1A'/%3E%3Ccircle cx='50' cy='50' r='42' fill='none' stroke='%233DDC97' stroke-width='6'/%3E%3Ccircle cx='50' cy='50' r='12' fill='%233DDC97'/%3E%3C/svg%3E">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0A0E1A;
+      --surface: #12172A;
+      --surface-2: #161C33;
+      --border: #232B47;
+      --border-soft: #1A2038;
+      --accent: #3DDC97;
+      --accent-dim: #2A9E6D;
+      --danger: #EF6F6C;
+      --text: #EAEDF5;
+      --text-dim: #8891AC;
+      --text-mute: #565F80;
+    }
+    * { -webkit-font-smoothing: antialiased; }
+    body {
+      background:
+        radial-gradient(ellipse 900px 500px at 50% -10%, rgba(61,220,151,0.08), transparent),
+        var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+    }
+    .font-display { font-family: 'Space Grotesk', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* Fundo em grade, tipo mapa/radar, atrás da tela de login */
+    .grid-backdrop {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background-image:
+        linear-gradient(rgba(61,220,151,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(61,220,151,0.05) 1px, transparent 1px);
+      background-size: 44px 44px;
+      -webkit-mask-image: radial-gradient(ellipse 700px 500px at 50% 35%, black, transparent 75%);
+      mask-image: radial-gradient(ellipse 700px 500px at 50% 35%, black, transparent 75%);
+    }
+
+    /* Sweep de radar giratório, atrás do card de login */
+    .radar { position: absolute; inset: -60px; z-index: -1; opacity: 0.5; }
+    .radar::before {
+      content: ''; position: absolute; inset: 0; border-radius: 9999px;
+      background: conic-gradient(from 0deg, transparent 0deg, rgba(61,220,151,0.35) 18deg, transparent 40deg);
+      animation: spin-radar 4s linear infinite;
+    }
+    @keyframes spin-radar { to { transform: rotate(360deg); } }
+
+    .pulse-dot { position: relative; width: 8px; height: 8px; border-radius: 9999px; background: var(--accent); flex-shrink: 0; }
+    .pulse-dot::after {
+      content: ''; position: absolute; inset: -6px; border-radius: 9999px;
+      border: 1.5px solid var(--accent); animation: pulse-ring 2.2s ease-out infinite;
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.5); opacity: 0.8; }
+      100% { transform: scale(2.1); opacity: 0; }
+    }
+
+    .input-field {
+      width: 100%; padding: 14px 16px; border-radius: 12px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      color: var(--text); font-size: 0.95rem; transition: border-color .15s;
+    }
+    .input-field::placeholder { color: var(--text-mute); }
+    .input-field:focus { outline: none; border-color: var(--accent); }
+
+    .btn-primary {
+      background: var(--accent); color: #06251A; font-weight: 600;
+      border-radius: 12px; padding: 14px; transition: filter .15s, transform .15s;
+    }
+    .btn-primary:hover { filter: brightness(1.08); }
+    .btn-primary:disabled { opacity: 0.6; }
+
+    .btn-ghost {
+      background: transparent; border: 1px solid var(--border); color: var(--text-dim);
+      border-radius: 12px; transition: border-color .15s, color .15s;
+    }
+    .btn-ghost:hover { border-color: var(--text-dim); color: var(--text); }
+
+    .card-sistema {
+      background: var(--surface); border: 1px solid var(--border-soft);
+      border-radius: 18px; transition: border-color .2s, transform .2s;
+      position: relative; overflow: hidden;
+    }
+    .card-sistema:hover { border-color: var(--accent-dim); transform: translateY(-3px); }
+    .card-sistema .admin-actions { opacity: 0; transition: opacity .15s; }
+    .card-sistema:hover .admin-actions,
+    .card-sistema:focus-within .admin-actions { opacity: 1; }
+
+    .btn-acessar {
+      border: 1px solid var(--accent-dim); color: var(--accent);
+      border-radius: 12px; font-weight: 600; transition: background .15s, color .15s;
+    }
+    .btn-acessar:hover { background: var(--accent); color: #06251A; }
+
+    .spinner {
+      width: 16px; height: 16px; border: 2.5px solid rgba(6,37,26,0.35);
+      border-top-color: #06251A; border-radius: 50%;
+      animation: spin 0.7s linear infinite; display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .badge-role {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; letter-spacing: 0.04em;
+      padding: 3px 9px; border-radius: 999px; border: 1px solid var(--border);
+      color: var(--text-dim);
+    }
+    .badge-role.admin { color: var(--accent); border-color: var(--accent-dim); background: rgba(61,220,151,0.08); }
+
+    ::selection { background: rgba(61,220,151,0.3); }
+  </style>
+</head>
+<body>
+  <div class="grid-backdrop"></div>
+
+  <div class="max-w-5xl mx-auto p-6 md:p-10 relative z-10">
+
+    <!-- Tela de Login -->
+    <div id="login-screen">
+      <div class="relative max-w-md mx-auto mt-16 md:mt-24">
+        <div class="radar"></div>
+        <div class="border rounded-3xl p-10 text-center" style="background: var(--surface); border-color: var(--border-soft);">
+          <div class="flex justify-center mb-5">
+            <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background: var(--surface-2); border: 1px solid var(--border);">
+              <div class="pulse-dot"></div>
+            </div>
+          </div>
+          <p class="font-mono text-xs tracking-widest mb-2" style="color: var(--text-mute);">ACESSO INTERNO</p>
+          <h1 class="font-display text-3xl font-semibold mb-8">Portal de Sistemas</h1>
+
+          <div class="space-y-3 text-left">
+            <input id="email" type="email" placeholder="E-mail corporativo" class="input-field">
+            <input id="password" type="password" placeholder="Senha" class="input-field">
+          </div>
+          <p id="login-erro" class="text-sm mt-3 mb-1 min-h-[1.25rem] text-left" style="color: var(--danger);"></p>
+
+          <button id="btn-login" onclick="fazerLogin()" class="btn-primary w-full flex items-center justify-center gap-2 mt-4">
+            <span id="btn-login-texto">Entrar</span>
+          </button>
+
+          <div class="mt-6 text-sm">
+            <button onclick="fazerCadastro()" class="hover:underline" style="color: var(--text-dim);">
+              Criar nova conta
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Portal -->
+    <div id="portal-screen" class="hidden">
+      <div class="flex flex-wrap justify-between items-center gap-4 mb-10 pb-6" style="border-bottom: 1px solid var(--border-soft);">
+        <div class="flex items-center gap-4">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center" style="background: var(--surface-2); border: 1px solid var(--border);">
+            <div class="pulse-dot"></div>
+          </div>
+          <div>
+            <h1 class="font-display text-2xl font-semibold leading-tight">Portal de Sistemas</h1>
+            <div class="flex items-center gap-2 mt-1">
+              <span id="usuario-logado" class="text-sm" style="color: var(--text-dim);"></span>
+              <span id="badge-role" class="badge-role"></span>
+            </div>
+          </div>
+        </div>
+        <button onclick="fazerLogout()" class="btn-ghost px-5 py-2.5 text-sm font-medium">
+          Sair
+        </button>
+      </div>
+
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="font-display text-lg font-semibold" style="color: var(--text-dim);">
+          Sistemas <span id="contador-sistemas" class="font-mono text-xs align-middle" style="color: var(--text-mute);"></span>
+        </h2>
+        <button id="btn-novo-sistema" onclick="abrirModal()" class="hidden btn-primary px-5 py-2.5 text-sm">
+          + Adicionar sistema
+        </button>
+      </div>
+
+      <div id="sistemas-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+    <div class="rounded-3xl p-8 w-full max-w-md" style="background: var(--surface); border: 1px solid var(--border-soft);">
+      <h3 id="modal-title" class="font-display text-xl font-semibold mb-6">Adicionar sistema</h3>
+      <div class="space-y-3">
+        <input id="nome" placeholder="Nome do sistema" class="input-field">
+        <input id="url" placeholder="https://..." class="input-field">
+      </div>
+      <p id="modal-erro" class="text-sm mt-2 mb-2 min-h-[1.25rem]" style="color: var(--danger);"></p>
+      <div class="flex gap-3 mt-4">
+        <button onclick="fecharModal()" class="btn-ghost flex-1 py-3">Cancelar</button>
+        <button onclick="salvarSistema()" class="btn-primary flex-1 py-3">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ⚠️ COLE AQUI OS DADOS DO SEU PROJETO SUPABASE
+    // (Configurações do projeto -> API -> Project URL / anon public key)
+    const SUPABASE_URL = 'https://unkpcytummovyzfrjatz.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_F7wm6c8OvWpYp-HG15uJXg_xf2XWx8Q';
+
+    // OBS: a lib do Supabase se registra em window.supabase.
+    // Usamos "sb" como nome do cliente pra não sobrescrever/conflitar com isso.
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let editandoId = null;
+    let papelUsuario = 'colaborador'; // 'admin' ou 'colaborador'
+
+    // ==================== LOGIN ====================
+    async function fazerLogin() {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const erroEl = document.getElementById('login-erro');
+      erroEl.textContent = '';
+      erroEl.style.color = 'var(--danger)';
+
+      if (!email || !password) {
+        erroEl.textContent = 'Preencha e-mail e senha.';
+        return;
+      }
+
+      setBotaoLoginCarregando(true);
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      setBotaoLoginCarregando(false);
+
+      if (error) {
+        erroEl.textContent = error.message === 'Invalid login credentials'
+          ? 'E-mail ou senha inválidos.'
+          : error.message;
+        return;
+      }
+      mostrarPortal();
+    }
+
+    async function fazerCadastro() {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const erroEl = document.getElementById('login-erro');
+      erroEl.textContent = '';
+
+      if (!email || password.length < 6) {
+        erroEl.style.color = 'var(--danger)';
+        erroEl.textContent = 'E-mail válido e senha com no mínimo 6 caracteres.';
+        return;
+      }
+
+      const { error } = await sb.auth.signUp({ email, password });
+      if (error) {
+        erroEl.style.color = 'var(--danger)';
+        erroEl.textContent = error.message;
+      } else {
+        erroEl.style.color = 'var(--accent)';
+        erroEl.textContent = 'Conta criada! Verifique seu e-mail (se a confirmação estiver ativa) e faça login.';
+      }
+    }
+
+    async function fazerLogout() {
+      await sb.auth.signOut();
+      document.getElementById('login-screen').classList.remove('hidden');
+      document.getElementById('portal-screen').classList.add('hidden');
+    }
+
+    function setBotaoLoginCarregando(carregando) {
+      const btn = document.getElementById('btn-login');
+      const texto = document.getElementById('btn-login-texto');
+      btn.disabled = carregando;
+      texto.innerHTML = carregando ? '<span class="spinner"></span>' : 'Entrar';
+    }
+
+    async function mostrarPortal() {
+      document.getElementById('login-screen').classList.add('hidden');
+      document.getElementById('portal-screen').classList.remove('hidden');
+
+      const { data: { user } } = await sb.auth.getUser();
+
+      // Busca o papel (role) do usuário na tabela profiles
+      papelUsuario = 'colaborador';
+      if (user) {
+        const { data: perfil } = await sb.from('profiles').select('role').eq('id', user.id).single();
+        if (perfil) papelUsuario = perfil.role;
+      }
+
+      const ehAdmin = papelUsuario === 'admin';
+      document.getElementById('usuario-logado').textContent = user ? user.email : '';
+
+      const badge = document.getElementById('badge-role');
+      badge.textContent = ehAdmin ? 'ADMIN' : 'COLABORADOR';
+      badge.classList.toggle('admin', ehAdmin);
+
+      // Só admin vê o botão de adicionar sistema
+      document.getElementById('btn-novo-sistema').classList.toggle('hidden', !ehAdmin);
+
+      carregarSistemas();
+    }
+
+    // ==================== SISTEMAS ====================
+    async function carregarSistemas() {
+      const container = document.getElementById('sistemas-container');
+      container.innerHTML = '<p class="col-span-full text-center py-16 font-mono text-sm" style="color: var(--text-mute);">Carregando sistemas...</p>';
+
+      const { data, error } = await sb.from('sistemas').select('*').order('created_at', { ascending: false });
+
+      const contador = document.getElementById('contador-sistemas');
+
+      if (error) {
+        contador.textContent = '';
+        container.innerHTML = `<p class="col-span-full text-center py-16" style="color: var(--danger);">Erro ao carregar sistemas: ${error.message}</p>`;
+        return;
+      }
+
+      contador.textContent = data.length > 0 ? `· ${String(data.length).padStart(2, '0')} ATIVOS` : '';
+
+      const ehAdmin = papelUsuario === 'admin';
+
+      if (data.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full text-center py-16 rounded-3xl" style="border: 1px dashed var(--border); color: var(--text-dim);">
+            <p class="font-display text-lg mb-1">Nenhum sistema por aqui ainda</p>
+            <p class="text-sm" style="color: var(--text-mute);">${ehAdmin ? 'Clique em "Adicionar sistema" para cadastrar o primeiro.' : 'Peça a um administrador para cadastrar os sistemas da equipe.'}</p>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = '';
+
+      data.forEach((s, i) => {
+        const div = document.createElement('div');
+        div.className = 'card-sistema p-7';
+        div.innerHTML = `
+          <div class="flex items-center justify-between mb-5">
+            <span class="font-mono text-xs" style="color: var(--text-mute);">SIS-${String(i + 1).padStart(2, '0')}</span>
+            <div class="pulse-dot"></div>
+          </div>
+          <h3 class="font-display text-xl font-semibold mb-6 leading-snug">${escapeHtml(s.nome)}</h3>
+          <a href="${escapeHtml(s.url)}" target="_blank" rel="noopener" class="btn-acessar block w-full py-3 text-center text-sm">
+            Abrir sistema →
+          </a>
+          ${ehAdmin ? `
+          <div class="admin-actions flex gap-2 mt-4 pt-4" style="border-top: 1px solid var(--border-soft);">
+            <button onclick="editarSistema(${s.id})" class="flex-1 py-2 rounded-lg text-xs font-medium btn-ghost">Editar</button>
+            <button onclick="removerSistema(${s.id})" class="flex-1 py-2 rounded-lg text-xs font-medium btn-ghost" style="color: var(--danger);">Remover</button>
+          </div>` : ''}
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str ?? '';
+      return div.innerHTML;
+    }
+
+    function normalizarUrl(url) {
+      if (!/^https?:\/\//i.test(url)) return 'https://' + url;
+      return url;
+    }
+
+    async function salvarSistema() {
+      const nome = document.getElementById('nome').value.trim();
+      let url = document.getElementById('url').value.trim();
+      const erroEl = document.getElementById('modal-erro');
+      erroEl.textContent = '';
+
+      if (!nome || !url) {
+        erroEl.textContent = 'Preencha nome e URL.';
+        return;
+      }
+      url = normalizarUrl(url);
+
+      const { error } = editandoId
+        ? await sb.from('sistemas').update({ nome, url }).eq('id', editandoId)
+        : await sb.from('sistemas').insert([{ nome, url }]);
+
+      if (error) {
+        erroEl.textContent = 'Erro ao salvar: ' + error.message;
+        return;
+      }
+
+      fecharModal();
+      carregarSistemas();
+    }
+
+    async function removerSistema(id) {
+      if (confirm("Deseja realmente remover este sistema?")) {
+        const { error } = await sb.from('sistemas').delete().eq('id', id);
+        if (error) return alert("Erro ao remover: " + error.message);
+        carregarSistemas();
+      }
+    }
+
+    function editarSistema(id) {
+      sb.from('sistemas').select('*').eq('id', id).single().then(({ data, error }) => {
+        if (error) return alert("Erro ao carregar sistema: " + error.message);
+        if (data) {
+          editandoId = data.id;
+          document.getElementById('modal-title').textContent = 'Editar sistema';
+          document.getElementById('nome').value = data.nome;
+          document.getElementById('url').value = data.url;
+          document.getElementById('modal-erro').textContent = '';
+          document.getElementById('modal').classList.remove('hidden');
+        }
+      });
+    }
+
+    function abrirModal() {
+      editandoId = null;
+      document.getElementById('modal-title').textContent = 'Adicionar sistema';
+      document.getElementById('nome').value = '';
+      document.getElementById('url').value = '';
+      document.getElementById('modal-erro').textContent = '';
+      document.getElementById('modal').classList.remove('hidden');
+    }
+
+    function fecharModal() {
+      document.getElementById('modal').classList.add('hidden');
+    }
+
+    // Verificar se já está logado (ex: ao recarregar a página)
+    sb.auth.onAuthStateChange((event, session) => {
+      if (session) mostrarPortal();
+    });
+  </script>
+</body>
+</html>

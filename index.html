@@ -3,55 +3,96 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portal de Sistemas · Conexão Rastreadores</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='42' fill='%230A0E1A'/%3E%3Ccircle cx='50' cy='50' r='42' fill='none' stroke='%233DDC97' stroke-width='6'/%3E%3Ccircle cx='50' cy='50' r='12' fill='%233DDC97'/%3E%3C/svg%3E">
+  <title>Portal de Sistemas · Rastreadores</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='42' fill='%23070B14'/%3E%3Ccircle cx='50' cy='50' r='42' fill='none' stroke='%23FF9142' stroke-width='6'/%3E%3Ccircle cx='50' cy='50' r='10' fill='%23FF9142'/%3E%3C/svg%3E">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0A0E1A;
-      --surface: #12172A;
-      --surface-2: #161C33;
-      --border: #232B47;
-      --border-soft: #1A2038;
-      --accent: #3DDC97;
-      --accent-dim: #2A9E6D;
-      --danger: #EF6F6C;
-      --text: #EAEDF5;
-      --text-dim: #8891AC;
-      --text-mute: #565F80;
+      --bg: #070B14;
+      --surface: #0E1420;
+      --surface-2: #131B2C;
+      --border: #212C46;
+      --border-soft: #182238;
+      --accent: #FF9142;       /* âmbar de sinal — chrome primário / status ao vivo */
+      --accent-dim: #C96C29;
+      --accent-2: #46D7D0;     /* ciano de dados — ação secundária dos nós */
+      --accent-2-dim: #2E9C97;
+      --danger: #FF6161;
+      --text: #EAF0FB;
+      --text-dim: #8592B0;
+      --text-mute: #475170;
     }
     * { -webkit-font-smoothing: antialiased; }
+    html { scroll-behavior: smooth; }
     body {
       background:
-        radial-gradient(ellipse 900px 500px at 50% -10%, rgba(61,220,151,0.08), transparent),
+        radial-gradient(ellipse 1000px 560px at 50% -8%, rgba(255,145,66,0.09), transparent),
+        radial-gradient(ellipse 700px 500px at 90% 15%, rgba(70,215,208,0.06), transparent),
         var(--bg);
       color: var(--text);
       font-family: 'Inter', sans-serif;
       min-height: 100vh;
+      padding-top: 38px;
     }
-    .font-display { font-family: 'Space Grotesk', sans-serif; }
+    .font-display { font-family: 'Sora', sans-serif; }
     .font-mono { font-family: 'JetBrains Mono', monospace; }
 
-    /* Fundo em grade, tipo mapa/radar, atrás da tela de login */
+    /* ============ HUD / TICKER SUPERIOR — elemento assinatura ============ */
+    .hud-bar {
+      position: fixed; top: 0; left: 0; right: 0; height: 38px; z-index: 40;
+      background: linear-gradient(180deg, rgba(14,20,32,0.97), rgba(14,20,32,0.9));
+      border-bottom: 1px solid var(--border-soft);
+      display: flex; align-items: center; gap: 0;
+      backdrop-filter: blur(6px);
+      overflow: hidden;
+    }
+    .hud-segment {
+      display: flex; align-items: center; gap: 8px; padding: 0 16px; height: 100%;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; letter-spacing: 0.05em;
+      color: var(--text-mute); border-right: 1px solid var(--border-soft); white-space: nowrap;
+    }
+    .hud-segment.status { color: var(--accent); flex-shrink: 0; }
+    .hud-track { flex: 1; overflow: hidden; position: relative; height: 100%; }
+    .hud-scroll {
+      position: absolute; white-space: nowrap; display: flex; align-items: center; height: 100%;
+      gap: 44px; padding-left: 100%;
+      animation: hud-scroll-anim 26s linear infinite;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; letter-spacing: 0.04em; color: var(--text-mute);
+    }
+    .hud-scroll span.hl { color: var(--accent-2); }
+    @keyframes hud-scroll-anim { to { transform: translateX(-100%); } }
+    .hud-clock { padding: 0 16px; font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: var(--text-dim); flex-shrink: 0; }
+
+    /* ============ Fundo tipo mapa de rastreamento ============ */
     .grid-backdrop {
       position: fixed; inset: 0; pointer-events: none; z-index: 0;
       background-image:
-        linear-gradient(rgba(61,220,151,0.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(61,220,151,0.05) 1px, transparent 1px);
-      background-size: 44px 44px;
-      -webkit-mask-image: radial-gradient(ellipse 700px 500px at 50% 35%, black, transparent 75%);
-      mask-image: radial-gradient(ellipse 700px 500px at 50% 35%, black, transparent 75%);
+        linear-gradient(rgba(70,215,208,0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(70,215,208,0.045) 1px, transparent 1px),
+        radial-gradient(rgba(255,145,66,0.35) 1px, transparent 1.4px);
+      background-size: 46px 46px, 46px 46px, 138px 138px;
+      background-position: 0 0, 0 0, 23px 23px;
+      -webkit-mask-image: radial-gradient(ellipse 750px 560px at 50% 32%, black, transparent 78%);
+      mask-image: radial-gradient(ellipse 750px 560px at 50% 32%, black, transparent 78%);
+    }
+    .scanline-overlay {
+      position: fixed; inset: 0; pointer-events: none; z-index: 41;
+      background: repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 3px);
+      mix-blend-mode: overlay;
     }
 
-    /* Sweep de radar giratório, atrás do card de login */
-    .radar { position: absolute; inset: -60px; z-index: -1; opacity: 0.5; }
+    /* Varredura de radar giratória, atrás do card de login */
+    .radar { position: absolute; inset: -60px; z-index: -1; opacity: 0.55; }
     .radar::before {
       content: ''; position: absolute; inset: 0; border-radius: 9999px;
-      background: conic-gradient(from 0deg, transparent 0deg, rgba(61,220,151,0.35) 18deg, transparent 40deg);
-      animation: spin-radar 4s linear infinite;
+      background: conic-gradient(from 0deg, transparent 0deg, rgba(255,145,66,0.32) 16deg, transparent 42deg);
+      animation: spin-radar 4.2s linear infinite;
+    }
+    .radar::after {
+      content: ''; position: absolute; inset: 40px; border-radius: 9999px; border: 1px solid rgba(70,215,208,0.14);
     }
     @keyframes spin-radar { to { transform: rotate(360deg); } }
 
@@ -65,46 +106,71 @@
       100% { transform: scale(2.1); opacity: 0; }
     }
 
+    /* Barras de sinal — substituem o ponto simples nos cartões de sistema */
+    .signal-bars { display: flex; align-items: flex-end; gap: 2.5px; height: 14px; }
+    .signal-bars span {
+      width: 3px; background: var(--accent-2); border-radius: 1px; opacity: 0.9;
+      animation: signal-flicker 1.8s ease-in-out infinite;
+    }
+    .signal-bars span:nth-child(1) { height: 40%; animation-delay: 0s; }
+    .signal-bars span:nth-child(2) { height: 65%; animation-delay: 0.2s; }
+    .signal-bars span:nth-child(3) { height: 100%; animation-delay: 0.4s; }
+    .signal-bars span:nth-child(4) { height: 75%; animation-delay: 0.6s; }
+    @keyframes signal-flicker { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+
     .input-field {
-      width: 100%; padding: 14px 16px; border-radius: 12px;
+      width: 100%; padding: 14px 16px; border-radius: 10px;
       background: var(--surface-2); border: 1px solid var(--border);
-      color: var(--text); font-size: 0.95rem; transition: border-color .15s;
+      color: var(--text); font-size: 0.95rem; transition: border-color .15s, box-shadow .15s;
     }
     .input-field::placeholder { color: var(--text-mute); }
-    .input-field:focus { outline: none; border-color: var(--accent); }
+    .input-field:focus { outline: none; border-color: var(--accent-2); box-shadow: 0 0 0 3px rgba(70,215,208,0.12); }
 
     .btn-primary {
-      background: var(--accent); color: #06251A; font-weight: 600;
-      border-radius: 12px; padding: 14px; transition: filter .15s, transform .15s;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+      color: #1A0E04; font-weight: 700;
+      border-radius: 10px; padding: 14px; transition: filter .15s, transform .15s, box-shadow .15s;
+      box-shadow: 0 8px 24px -8px rgba(255,145,66,0.35);
     }
-    .btn-primary:hover { filter: brightness(1.08); }
-    .btn-primary:disabled { opacity: 0.6; }
+    .btn-primary:hover { filter: brightness(1.06); transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: 0.6; transform: none; }
+    .btn-primary:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
 
     .btn-ghost {
       background: transparent; border: 1px solid var(--border); color: var(--text-dim);
-      border-radius: 12px; transition: border-color .15s, color .15s;
+      border-radius: 10px; transition: border-color .15s, color .15s, background .15s;
     }
-    .btn-ghost:hover { border-color: var(--text-dim); color: var(--text); }
+    .btn-ghost:hover { border-color: var(--text-dim); color: var(--text); background: rgba(255,255,255,0.02); }
+    .btn-ghost:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
 
     .card-sistema {
-      background: var(--surface); border: 1px solid var(--border-soft);
-      border-radius: 18px; transition: border-color .2s, transform .2s;
+      background: linear-gradient(180deg, var(--surface), var(--surface) 60%, var(--surface-2));
+      border: 1px solid var(--border-soft);
+      border-radius: 16px; transition: border-color .2s, transform .2s, box-shadow .2s;
       position: relative; overflow: hidden;
     }
-    .card-sistema:hover { border-color: var(--accent-dim); transform: translateY(-3px); }
+    .card-sistema::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(70,215,208,0.5), transparent);
+      opacity: 0; transition: opacity .2s;
+    }
+    .card-sistema:hover { border-color: var(--accent-2-dim); transform: translateY(-3px); box-shadow: 0 16px 32px -16px rgba(0,0,0,0.5); }
+    .card-sistema:hover::before { opacity: 1; }
     .card-sistema .admin-actions { opacity: 0; transition: opacity .15s; }
     .card-sistema:hover .admin-actions,
     .card-sistema:focus-within .admin-actions { opacity: 1; }
 
     .btn-acessar {
-      border: 1px solid var(--accent-dim); color: var(--accent);
-      border-radius: 12px; font-weight: 600; transition: background .15s, color .15s;
+      border: 1px solid var(--accent-2-dim); color: var(--accent-2);
+      border-radius: 10px; font-weight: 600; transition: background .15s, color .15s;
     }
-    .btn-acessar:hover { background: var(--accent); color: #06251A; }
+    .btn-acessar:hover { background: var(--accent-2); color: #06201E; }
+    .btn-acessar:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
 
     .spinner {
-      width: 16px; height: 16px; border: 2.5px solid rgba(6,37,26,0.35);
-      border-top-color: #06251A; border-radius: 50%;
+      width: 16px; height: 16px; border: 2.5px solid rgba(26,14,4,0.35);
+      border-top-color: #1A0E04; border-radius: 50%;
       animation: spin 0.7s linear infinite; display: inline-block;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -114,13 +180,51 @@
       padding: 3px 9px; border-radius: 999px; border: 1px solid var(--border);
       color: var(--text-dim);
     }
-    .badge-role.admin { color: var(--accent); border-color: var(--accent-dim); background: rgba(61,220,151,0.08); }
+    .badge-role.admin { color: var(--accent); border-color: var(--accent-dim); background: rgba(255,145,66,0.08); }
 
-    ::selection { background: rgba(61,220,151,0.3); }
+    .emblema {
+      width: 56px; height: 56px; border-radius: 16px; position: relative;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--surface-2); border: 1px solid var(--border);
+    }
+    .emblema::before {
+      content: ''; position: absolute; inset: 8px; border-radius: 10px;
+      border: 1px solid rgba(255,145,66,0.25);
+    }
+
+    ::selection { background: rgba(255,145,66,0.28); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .radar::before, .pulse-dot::after, .signal-bars span, .hud-scroll { animation: none !important; }
+    }
+
+    @media (max-width: 640px) {
+      .hud-segment.mid { display: none; }
+    }
   </style>
 </head>
 <body>
+  <!-- HUD / Ticker de telemetria (elemento assinatura, decorativo) -->
+  <div class="hud-bar" role="status" aria-label="Status do portal">
+    <div class="hud-segment status">
+      <span class="pulse-dot" style="width:6px;height:6px;"></span> PORTAL ONLINE
+    </div>
+    <div class="hud-track">
+      <div class="hud-scroll" id="hud-scroll">
+        <span>CANAL <span class="hl">SEGURO</span> ESTABELECIDO</span>
+        <span>LAT 22.9068° S · LON 43.1729° W</span>
+        <span>SINAL <span class="hl">98%</span></span>
+        <span>LATÊNCIA <span class="hl">12ms</span></span>
+        <span>NÓS MONITORADOS: <span id="hud-count" class="hl">--</span></span>
+        <span>CRIPTOGRAFIA TLS 1.3 ATIVA</span>
+      </div>
+    </div>
+    <div class="hud-segment mid">SESSÃO CIFRADA</div>
+    <div class="hud-clock" id="hud-clock">--:--:--</div>
+  </div>
+
   <div class="grid-backdrop"></div>
+  <div class="scanline-overlay"></div>
 
   <div class="max-w-5xl mx-auto p-6 md:p-10 relative z-10">
 
@@ -130,12 +234,12 @@
         <div class="radar"></div>
         <div class="border rounded-3xl p-10 text-center" style="background: var(--surface); border-color: var(--border-soft);">
           <div class="flex justify-center mb-5">
-            <div class="w-14 h-14 rounded-2xl flex items-center justify-center" style="background: var(--surface-2); border: 1px solid var(--border);">
+            <div class="emblema">
               <div class="pulse-dot"></div>
             </div>
           </div>
-          <p class="font-mono text-xs tracking-widest mb-2" style="color: var(--text-mute);">ACESSO INTERNO</p>
-          <h1 class="font-display text-3xl font-semibold mb-8">Portal de Sistemas</h1>
+          <p class="font-mono text-xs tracking-widest mb-2" style="color: var(--text-mute);">ACESSO INTERNO · REDE DE RASTREADORES</p>
+          <h1 class="font-display text-3xl font-bold mb-8">Portal de Sistemas</h1>
 
           <div class="space-y-3 text-left">
             <input id="email" type="email" placeholder="E-mail corporativo" class="input-field">
@@ -160,13 +264,13 @@
     <div id="portal-screen" class="hidden">
       <div class="flex flex-wrap justify-between items-center gap-4 mb-10 pb-6" style="border-bottom: 1px solid var(--border-soft);">
         <div class="flex items-center gap-4">
-          <div class="w-11 h-11 rounded-xl flex items-center justify-center" style="background: var(--surface-2); border: 1px solid var(--border);">
+          <div class="emblema" style="width:48px;height:48px;border-radius:14px;">
             <div class="pulse-dot"></div>
           </div>
           <div>
-            <h1 class="font-display text-2xl font-semibold leading-tight">Portal de Sistemas</h1>
+            <h1 class="font-display text-2xl font-bold leading-tight">Portal de Sistemas</h1>
             <div class="flex items-center gap-2 mt-1">
-              <span id="usuario-logado" class="text-sm" style="color: var(--text-dim);"></span>
+              <span id="usuario-logado" class="text-sm font-mono" style="color: var(--text-dim);"></span>
               <span id="badge-role" class="badge-role"></span>
             </div>
           </div>
@@ -192,7 +296,7 @@
   <!-- Modal -->
   <div id="modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
     <div class="rounded-3xl p-8 w-full max-w-md" style="background: var(--surface); border: 1px solid var(--border-soft);">
-      <h3 id="modal-title" class="font-display text-xl font-semibold mb-6">Adicionar sistema</h3>
+      <h3 id="modal-title" class="font-display text-xl font-bold mb-6">Adicionar sistema</h3>
       <div class="space-y-3">
         <input id="nome" placeholder="Nome do sistema" class="input-field">
         <input id="url" placeholder="https://..." class="input-field">
@@ -217,6 +321,16 @@
 
     let editandoId = null;
     let papelUsuario = 'colaborador'; // 'admin' ou 'colaborador'
+
+    // ==================== HUD decorativo (relógio) ====================
+    function atualizarRelogioHud() {
+      const el = document.getElementById('hud-clock');
+      if (!el) return;
+      const agora = new Date();
+      el.textContent = agora.toLocaleTimeString('pt-BR', { hour12: false });
+    }
+    atualizarRelogioHud();
+    setInterval(atualizarRelogioHud, 1000);
 
     // ==================== LOGIN ====================
     async function fazerLogin() {
@@ -261,7 +375,7 @@
         erroEl.style.color = 'var(--danger)';
         erroEl.textContent = error.message;
       } else {
-        erroEl.style.color = 'var(--accent)';
+        erroEl.style.color = 'var(--accent-2)';
         erroEl.textContent = 'Conta criada! Verifique seu e-mail (se a confirmação estiver ativa) e faça login.';
       }
     }
@@ -313,6 +427,7 @@
       const { data, error } = await sb.from('sistemas').select('*').order('created_at', { ascending: false });
 
       const contador = document.getElementById('contador-sistemas');
+      const hudCount = document.getElementById('hud-count');
 
       if (error) {
         contador.textContent = '';
@@ -321,6 +436,7 @@
       }
 
       contador.textContent = data.length > 0 ? `· ${String(data.length).padStart(2, '0')} ATIVOS` : '';
+      if (hudCount) hudCount.textContent = String(data.length).padStart(2, '0');
 
       const ehAdmin = papelUsuario === 'admin';
 
@@ -340,10 +456,10 @@
         div.className = 'card-sistema p-7';
         div.innerHTML = `
           <div class="flex items-center justify-between mb-5">
-            <span class="font-mono text-xs" style="color: var(--text-mute);">SIS-${String(i + 1).padStart(2, '0')}</span>
-            <div class="pulse-dot"></div>
+            <span class="font-mono text-xs" style="color: var(--text-mute);">NÓ-${String(i + 1).padStart(2, '0')}</span>
+            <div class="signal-bars"><span></span><span></span><span></span><span></span></div>
           </div>
-          <h3 class="font-display text-xl font-semibold mb-6 leading-snug">${escapeHtml(s.nome)}</h3>
+          <h3 class="font-display text-xl font-bold mb-6 leading-snug">${escapeHtml(s.nome)}</h3>
           <a href="${escapeHtml(s.url)}" target="_blank" rel="noopener" class="btn-acessar block w-full py-3 text-center text-sm">
             Abrir sistema →
           </a>

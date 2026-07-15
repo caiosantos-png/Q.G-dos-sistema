@@ -228,6 +228,40 @@
       .hud-segment.mid { display: none; }
       .card-sistema { transform: none !important; }
     }
+
+    /* ============ Barra lateral de setores ============ */
+    .portal-body { display: flex; gap: 28px; align-items: flex-start; }
+    .sidebar-setores { flex: 0 0 230px; position: sticky; top: 24px; }
+    .setor-lista { display: flex; flex-direction: column; gap: 4px; }
+    .setor-item {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      padding: 10px 12px; border-radius: 12px; border: 1px solid transparent; cursor: pointer;
+      color: var(--text-dim); font-size: 0.88rem; font-weight: 500; transition: all .15s;
+      white-space: nowrap; overflow: hidden;
+    }
+    .setor-item:hover { background: var(--surface-2); color: var(--text); }
+    .setor-item.ativo { background: rgba(70,215,208,0.10); border-color: var(--accent-2-dim); color: var(--accent-2); }
+    .setor-item .setor-nome-txt { overflow: hidden; text-overflow: ellipsis; }
+    .setor-actions { opacity: 0; display: flex; gap: 2px; flex-shrink: 0; transition: opacity .15s; }
+    .setor-item:hover .setor-actions { opacity: 1; }
+    .setor-mini-btn {
+      width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
+      border-radius: 6px; color: var(--text-mute); font-size: 0.75rem; transition: all .15s;
+    }
+    .setor-mini-btn:hover { color: var(--text); background: rgba(255,255,255,0.08); }
+    .setor-mini-btn.danger:hover { color: var(--danger); }
+    .btn-novo-setor {
+      width: 100%; margin-top: 10px; padding: 10px 12px; border-radius: 12px;
+      border: 1px dashed var(--border); color: var(--text-dim); font-size: 0.85rem; font-weight: 500;
+      transition: all .15s;
+    }
+    .btn-novo-setor:hover { border-color: var(--accent-2-dim); color: var(--accent-2); }
+    @media (max-width: 768px) {
+      .portal-body { flex-direction: column; }
+      .sidebar-setores { flex: none; width: 100%; position: static; }
+      .setor-lista { flex-direction: row; overflow-x: auto; padding-bottom: 8px; gap: 8px; }
+      .setor-item { flex-shrink: 0; }
+    }
   </style>
 </head>
 <body>
@@ -270,7 +304,7 @@
             <div class="flex justify-center mb-5">
               <div class="emblema"><img id="logo-login" src="" alt="Logo" class="emblema-logo"></div>
             </div>
-            <p class="font-mono text-xs tracking-widest mb-2" style="color: var(--text-mute);">ACESSO INTERNO</p>
+            <p class="font-mono text-xs tracking-widest mb-2" style="color: var(--text-mute);">ACESSO INTERNO · REDE DE RASTREADORES</p>
             <h1 class="font-display text-3xl font-bold mb-8 decode-text" id="titulo-login">Portal de Sistemas</h1>
 
             <div class="space-y-3 text-left">
@@ -311,14 +345,25 @@
         <button onclick="fazerLogout()" class="btn-ghost px-5 py-2.5 text-sm font-medium">Sair</button>
       </div>
 
-      <div class="flex justify-between items-center mb-6">
-        <h2 class="font-display text-lg font-semibold" style="color: var(--text-dim);">
-          Sistemas <span id="contador-sistemas" class="font-mono text-xs align-middle" style="color: var(--text-mute);"></span>
-        </h2>
-        <button id="btn-novo-sistema" onclick="abrirModal()" class="hidden btn-primary ripple-host px-5 py-2.5 text-sm">+ Adicionar sistema</button>
-      </div>
+      <div class="portal-body">
+        <aside class="sidebar-setores">
+          <h2 class="font-display text-xs font-semibold tracking-wide mb-3" style="color: var(--text-mute);">SETORES</h2>
+          <div id="setores-lista" class="setor-lista"></div>
+          <button id="btn-novo-setor" onclick="abrirModalSetor()" class="hidden btn-novo-setor">+ Novo setor</button>
+        </aside>
 
-      <div id="sistemas-container" class="cards-3d-stage grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        <main class="flex-1 min-w-0">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="font-display text-lg font-semibold" style="color: var(--text-dim);">
+              <span id="titulo-setor-atual">Todos os sistemas</span>
+              <span id="contador-sistemas" class="font-mono text-xs align-middle" style="color: var(--text-mute);"></span>
+            </h2>
+            <button id="btn-novo-sistema" onclick="abrirModal()" class="hidden btn-primary ripple-host px-5 py-2.5 text-sm">+ Adicionar sistema</button>
+          </div>
+
+          <div id="sistemas-container" class="cards-3d-stage grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </main>
+      </div>
     </div>
   </div>
 
@@ -329,11 +374,25 @@
       <div class="space-y-3">
         <input id="nome" placeholder="Nome do sistema" class="input-field">
         <input id="url" placeholder="https://..." class="input-field">
+        <select id="sistema-setor" class="input-field"></select>
       </div>
       <p id="modal-erro" class="text-sm mt-2 mb-2 min-h-[1.25rem]" style="color: var(--danger);"></p>
       <div class="flex gap-3 mt-4">
         <button onclick="fecharModal()" class="btn-ghost flex-1 py-3">Cancelar</button>
         <button onclick="salvarSistema()" class="btn-primary flex-1 py-3">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Setor -->
+  <div id="modal-setor" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+    <div class="rounded-3xl p-8 w-full max-w-sm" style="background: var(--surface); border: 1px solid var(--border-soft);">
+      <h3 id="modal-setor-title" class="font-display text-xl font-bold mb-6">Novo setor</h3>
+      <input id="setor-nome" placeholder="Nome do setor (ex: Financeiro)" class="input-field">
+      <p id="setor-erro" class="text-sm mt-2 mb-2 min-h-[1.25rem]" style="color: var(--danger);"></p>
+      <div class="flex gap-3 mt-4">
+        <button onclick="fecharModalSetor()" class="btn-ghost flex-1 py-3">Cancelar</button>
+        <button onclick="salvarSetor()" class="btn-primary flex-1 py-3">Salvar</button>
       </div>
     </div>
   </div>
@@ -352,6 +411,9 @@
 
     let editandoId = null;
     let papelUsuario = 'colaborador';
+    let setores = [];
+    let setorAtualId = null; // null = "Todos os sistemas"
+    let editandoSetorId = null;
     const prefereReduzirMovimento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     // ==================== Paralaxe de fundo (orbs + grade) ====================
@@ -593,6 +655,98 @@
       badge.textContent = ehAdmin ? 'ADMIN' : 'COLABORADOR';
       badge.classList.toggle('admin', ehAdmin);
       document.getElementById('btn-novo-sistema').classList.toggle('hidden', !ehAdmin);
+      document.getElementById('btn-novo-setor').classList.toggle('hidden', !ehAdmin);
+      await carregarSetores();
+      carregarSistemas();
+    }
+
+    // ==================== SETORES ====================
+    async function carregarSetores() {
+      const lista = document.getElementById('setores-lista');
+      const { data, error } = await sb.from('setores').select('*').order('nome', { ascending: true });
+
+      if (error) {
+        lista.innerHTML = `<p class="text-sm" style="color: var(--danger);">Erro ao carregar setores</p>`;
+        return;
+      }
+
+      setores = data || [];
+      const ehAdmin = papelUsuario === 'admin';
+      lista.innerHTML = '';
+
+      // Item "Todos os sistemas"
+      lista.appendChild(criarItemSetor(null, 'Todos os sistemas', ehAdmin));
+      setores.forEach(s => lista.appendChild(criarItemSetor(s.id, s.nome, ehAdmin)));
+    }
+
+    function criarItemSetor(id, nome, ehAdmin) {
+      const div = document.createElement('div');
+      div.className = 'setor-item' + (id === setorAtualId ? ' ativo' : '');
+      div.onclick = () => selecionarSetor(id, nome);
+      div.innerHTML = `
+        <span class="setor-nome-txt">${escapeHtml(nome)}</span>
+        ${ehAdmin && id !== null ? `
+        <span class="setor-actions">
+          <button class="setor-mini-btn" title="Renomear" onclick="event.stopPropagation(); abrirModalSetor(${id}, '${escapeHtml(nome).replace(/'/g, "\\'")}')">✎</button>
+          <button class="setor-mini-btn danger" title="Remover" onclick="event.stopPropagation(); removerSetor(${id})">×</button>
+        </span>` : ''}
+      `;
+      return div;
+    }
+
+    function selecionarSetor(id, nome) {
+      setorAtualId = id;
+      document.getElementById('titulo-setor-atual').textContent = id === null ? 'Todos os sistemas' : nome;
+      const ehAdmin = papelUsuario === 'admin';
+      const lista = document.getElementById('setores-lista');
+      lista.innerHTML = '';
+      lista.appendChild(criarItemSetor(null, 'Todos os sistemas', ehAdmin));
+      setores.forEach(s => lista.appendChild(criarItemSetor(s.id, s.nome, ehAdmin)));
+      carregarSistemas();
+    }
+
+    function preencherSelectSetores(selecionadoId) {
+      const select = document.getElementById('sistema-setor');
+      select.innerHTML = setores.map(s =>
+        `<option value="${s.id}" ${s.id === selecionadoId ? 'selected' : ''}>${escapeHtml(s.nome)}</option>`
+      ).join('');
+    }
+
+    function abrirModalSetor(id, nomeAtual) {
+      editandoSetorId = id ?? null;
+      document.getElementById('modal-setor-title').textContent = id ? 'Renomear setor' : 'Novo setor';
+      document.getElementById('setor-nome').value = nomeAtual || '';
+      document.getElementById('setor-erro').textContent = '';
+      document.getElementById('modal-setor').classList.remove('hidden');
+    }
+
+    function fecharModalSetor() { document.getElementById('modal-setor').classList.add('hidden'); }
+
+    async function salvarSetor() {
+      const nome = document.getElementById('setor-nome').value.trim();
+      const erroEl = document.getElementById('setor-erro');
+      erroEl.textContent = '';
+      if (!nome) { erroEl.textContent = 'Digite um nome para o setor.'; return; }
+
+      const { error } = editandoSetorId
+        ? await sb.from('setores').update({ nome }).eq('id', editandoSetorId)
+        : await sb.from('setores').insert([{ nome }]);
+
+      if (error) {
+        erroEl.textContent = error.message.includes('duplicate') ? 'Já existe um setor com esse nome.' : 'Erro ao salvar: ' + error.message;
+        return;
+      }
+      fecharModalSetor();
+      await carregarSetores();
+      carregarSistemas();
+    }
+
+    async function removerSetor(id) {
+      if (!confirm('Remover este setor? Os sistemas dele deixam de aparecer nele (mas continuam em "Todos os sistemas").')) return;
+      const { error } = await sb.from('setores').delete().eq('id', id);
+      if (error) return alert('Erro ao remover: ' + error.message);
+      if (setorAtualId === id) { setorAtualId = null; document.getElementById('titulo-setor-atual').textContent = 'Todos os sistemas'; }
+      await carregarSetores();
       carregarSistemas();
     }
 
@@ -601,7 +755,9 @@
       const container = document.getElementById('sistemas-container');
       container.innerHTML = '<p class="col-span-full text-center py-16 font-mono text-sm" style="color: var(--text-mute);">Carregando sistemas...</p>';
 
-      const { data, error } = await sb.from('sistemas').select('*').order('created_at', { ascending: false });
+      let query = sb.from('sistemas').select('*').order('created_at', { ascending: false });
+      if (setorAtualId !== null) query = query.eq('setor_id', setorAtualId);
+      const { data, error } = await query;
       const contador = document.getElementById('contador-sistemas');
       const hudCount = document.getElementById('hud-count');
 
@@ -672,12 +828,14 @@
       const erroEl = document.getElementById('modal-erro');
       erroEl.textContent = '';
 
+      const setorId = parseInt(document.getElementById('sistema-setor').value, 10);
       if (!nome || !url) { erroEl.textContent = 'Preencha nome e URL.'; return; }
+      if (!setorId) { erroEl.textContent = 'Escolha um setor.'; return; }
       url = normalizarUrl(url);
 
       const { error } = editandoId
-        ? await sb.from('sistemas').update({ nome, url }).eq('id', editandoId)
-        : await sb.from('sistemas').insert([{ nome, url }]);
+        ? await sb.from('sistemas').update({ nome, url, setor_id: setorId }).eq('id', editandoId)
+        : await sb.from('sistemas').insert([{ nome, url, setor_id: setorId }]);
 
       if (error) { erroEl.textContent = 'Erro ao salvar: ' + error.message; return; }
       fecharModal();
@@ -700,6 +858,7 @@
           document.getElementById('modal-title').textContent = 'Editar sistema';
           document.getElementById('nome').value = data.nome;
           document.getElementById('url').value = data.url;
+          preencherSelectSetores(data.setor_id);
           document.getElementById('modal-erro').textContent = '';
           document.getElementById('modal').classList.remove('hidden');
         }
@@ -707,10 +866,15 @@
     }
 
     function abrirModal() {
+      if (setores.length === 0) {
+        alert('Crie um setor primeiro (botão "+ Novo setor" na barra lateral) antes de adicionar um sistema.');
+        return;
+      }
       editandoId = null;
       document.getElementById('modal-title').textContent = 'Adicionar sistema';
       document.getElementById('nome').value = '';
       document.getElementById('url').value = '';
+      preencherSelectSetores(setorAtualId || setores[0].id);
       document.getElementById('modal-erro').textContent = '';
       document.getElementById('modal').classList.remove('hidden');
     }

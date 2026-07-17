@@ -883,5 +883,24 @@
 
     sb.auth.onAuthStateChange((event, session) => { if (session) mostrarPortal(); });
   </script>
+
+    <!-- BOTÃO FLUTUANTE CONEXÃO IA - 96px -->
+   <a href="https://iaconexao.netlify.app/" 
+   target="_blank" 
+   class="fixed bottom-8 right-8 z-[9999] group">
+  
+  <div class="relative w-24 h-24 rounded-3xl overflow-hidden shadow-2xl shadow-black/80 border-4 border-[#46D7D0]/50 hover:border-[#46D7D0] transition-all duration-300 hover:scale-110 active:scale-95">
+    
+    <img src="https://i.postimg.cc/PJymy8s6/Gemini-Generated-Image-mpflrhmpflrhmpfl-Photoroom.png" 
+         alt="Conexão IA" 
+         class="w-full h-full object-contain bg-[#0A0F1C] p-1 scale-110">
+  </div>
+
+  <!-- Glow -->
+  <div class="absolute inset-0 rounded-3xl bg-gradient-to-br from-[#46D7D0] via-[#FF9142] to-[#46D7D0] opacity-0 group-hover:opacity-35 blur-2xl transition-all duration-300 pointer-events-none -z-10"></div>
+  
+  <div class="absolute -inset-2 rounded-[2rem] border border-[#46D7D0]/30 group-hover:border-[#46D7D0]/60 transition-all duration-300 pointer-events-none"></div>
+ </a>
+
 </body>
 </html>

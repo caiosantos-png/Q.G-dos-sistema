@@ -53,6 +53,67 @@
     .orb-parallax-2 { transform: translate(calc(var(--px) * -0.4), calc(var(--py) * -0.4)); }
     .orb-parallax-3 { transform: translate(calc(var(--px) * 0.3), calc(var(--py) * -0.3)); }
 
+    /* ============ Camadas extras de animação (adicionadas, sem tocar nas anteriores) ============ */
+    .orb-d { width: 300px; height: 300px; background: radial-gradient(circle, rgba(255,145,66,0.22), transparent 70%); top: 62%; left: 4%; animation: drift-d 18s ease-in-out infinite; }
+    .orb-e { width: 260px; height: 260px; background: radial-gradient(circle, rgba(70,215,208,0.20), transparent 70%); top: 4%; right: 22%; animation: drift-e 20s ease-in-out infinite; }
+    @keyframes drift-d { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(45px,-35px) scale(1.18); } }
+    @keyframes drift-e { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-35px,45px) scale(1.12); } }
+
+    .energia-anel {
+      position: fixed; top: 50%; left: 50%; width: 1400px; height: 1400px;
+      transform: translate(-50%, -50%); z-index: 0; pointer-events: none; opacity: 0.35;
+      background: conic-gradient(from 0deg, transparent 0deg, rgba(255,145,66,0.10) 30deg, transparent 70deg, transparent 180deg, rgba(70,215,208,0.10) 220deg, transparent 260deg, transparent 360deg);
+      animation: girar-anel 70s linear infinite;
+    }
+    @keyframes girar-anel { to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+    .cometas { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+    .cometa {
+      position: absolute; width: 130px; height: 2px; border-radius: 999px;
+      background: linear-gradient(90deg, transparent, rgba(70,215,208,0.9), transparent);
+      opacity: 0; filter: drop-shadow(0 0 6px rgba(70,215,208,0.8));
+      animation: cair-cometa 7s linear infinite;
+    }
+    .cometa-1 { top: 8%; left: -10%; animation-delay: 0s; }
+    .cometa-2 { top: 34%; left: -10%; background: linear-gradient(90deg, transparent, rgba(255,145,66,0.9), transparent); filter: drop-shadow(0 0 6px rgba(255,145,66,0.8)); animation-delay: 2.6s; animation-duration: 9s; }
+    .cometa-3 { top: 64%; left: -10%; animation-delay: 5s; animation-duration: 8s; }
+    @keyframes cair-cometa {
+      0% { transform: translate(0, 0) rotate(18deg); opacity: 0; }
+      8% { opacity: 0.9; }
+      35% { opacity: 0.9; }
+      45% { opacity: 0; }
+      100% { transform: translate(135vw, 55vh) rotate(18deg); opacity: 0; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .orb-d, .orb-e, .energia-anel, .cometa { animation: none !important; opacity: 0 !important; }
+    }
+
+    /* ============ Mais camadas (partículas, estrelas, sonar) — só adição ============ */
+    .particula {
+      position: absolute; bottom: -20px; border-radius: 999px; background: rgba(70,215,208,0.75);
+      filter: drop-shadow(0 0 4px rgba(70,215,208,0.8)); animation: subir-particula linear infinite;
+    }
+    @keyframes subir-particula {
+      0% { transform: translateY(0) translateX(0); opacity: 0; }
+      10% { opacity: 0.9; }
+      90% { opacity: 0.5; }
+      100% { transform: translateY(-115vh) translateX(var(--desvio, 30px)); opacity: 0; }
+    }
+    .estrela { position: absolute; width: 2px; height: 2px; border-radius: 999px; background: #fff; animation: piscar-estrela ease-in-out infinite; }
+    @keyframes piscar-estrela { 0%,100% { opacity: 0.15; } 50% { opacity: 0.9; } }
+    .sonar { position: fixed; right: 55px; bottom: 55px; z-index: 0; pointer-events: none; }
+    .sonar span {
+      position: absolute; inset: 0; border-radius: 999px; border: 1.5px solid rgba(255,145,66,0.5);
+      animation: onda-sonar 3.6s ease-out infinite;
+    }
+    .sonar span:nth-child(2) { animation-delay: 1.2s; }
+    .sonar span:nth-child(3) { animation-delay: 2.4s; }
+    @keyframes onda-sonar { 0% { width: 8px; height: 8px; margin: 0; opacity: 0.8; } 100% { width: 260px; height: 260px; margin: -130px; opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) {
+      .particula, .estrela, .sonar span { animation: none !important; opacity: 0 !important; }
+    }
+
     .grid-backdrop {
       position: fixed; inset: 0; pointer-events: none; z-index: 0;
       background-image:
@@ -292,7 +353,31 @@
     <div class="orb-layer orb-parallax-1"><div class="orb orb-a"></div></div>
     <div class="orb-layer orb-parallax-2"><div class="orb orb-b"></div></div>
     <div class="orb-layer orb-parallax-3"><div class="orb orb-c"></div></div>
+    <div class="orb-layer orb-parallax-2"><div class="orb orb-d"></div></div>
+    <div class="orb-layer orb-parallax-1"><div class="orb orb-e"></div></div>
   </div>
+  <div class="energia-anel"></div>
+  <div class="cometas">
+    <div class="cometa cometa-1"></div>
+    <div class="cometa cometa-2"></div>
+    <div class="cometa cometa-3"></div>
+  </div>
+  <div class="depth-scene" aria-hidden="true">
+    <div class="particula" style="left:6%; width:4px; height:4px; --desvio:24px; animation-duration:14s; animation-delay:0s;"></div>
+    <div class="particula" style="left:18%; width:3px; height:3px; --desvio:-18px; animation-duration:18s; animation-delay:2s;"></div>
+    <div class="particula" style="left:33%; width:5px; height:5px; --desvio:30px; animation-duration:12s; animation-delay:4s;"></div>
+    <div class="particula" style="left:52%; width:3px; height:3px; --desvio:-24px; animation-duration:16s; animation-delay:1s;"></div>
+    <div class="particula" style="left:68%; width:4px; height:4px; --desvio:20px; animation-duration:20s; animation-delay:6s;"></div>
+    <div class="particula" style="left:81%; width:3px; height:3px; --desvio:-30px; animation-duration:13s; animation-delay:3s;"></div>
+    <div class="particula" style="left:92%; width:5px; height:5px; --desvio:16px; animation-duration:17s; animation-delay:5s;"></div>
+    <div class="estrela" style="top:12%; left:15%; animation-duration:3.2s;"></div>
+    <div class="estrela" style="top:22%; left:70%; animation-duration:2.4s; animation-delay:.6s;"></div>
+    <div class="estrela" style="top:8%; left:44%; animation-duration:4s; animation-delay:1.2s;"></div>
+    <div class="estrela" style="top:38%; left:88%; animation-duration:2.8s; animation-delay:.3s;"></div>
+    <div class="estrela" style="top:60%; left:10%; animation-duration:3.6s; animation-delay:1.8s;"></div>
+    <div class="estrela" style="top:75%; left:60%; animation-duration:2.6s; animation-delay:.9s;"></div>
+  </div>
+  <div class="sonar"><span></span><span></span><span></span></div>
 
   <div class="hud-bar" role="status" aria-label="Status do portal">
     <div class="hud-segment status"><span class="pulse-dot" style="width:6px;height:6px;"></span> PORTAL ONLINE</div>
